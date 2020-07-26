@@ -14,32 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.example.service;
+package org.example.data;
 
-import org.example.model.Member;
-
-import javax.ejb.Stateless;
-import javax.enterprise.event.Event;
+import java.util.List;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
-import java.util.logging.Logger;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+import org.example.model.InventoryItem;
 
-// The @Stateless annotation eliminates the need for manual transaction demarcation
-@Stateless
-public class MemberRegistration {
-
-    @Inject
-    private Logger log;
+@ApplicationScoped
+public class InventoryRepository {
 
     @Inject
     private EntityManager em;
 
-    @Inject
-    private Event<Member> memberEventSrc;
+    public InventoryItem findById(Long id) {
+        return em.find(InventoryItem.class, id);
+    }
 
-    public void register(Member member) throws Exception {
-        log.info("Registering " + member.getName());
-        em.persist(member);
-        memberEventSrc.fire(member);
+    public List<InventoryItem> findAllOrderedByName() {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<InventoryItem> criteria = cb.createQuery(InventoryItem.class);
+        Root<InventoryItem> item = criteria.from(InventoryItem.class);
+        criteria.select(item).orderBy(cb.asc(item.get("name")));
+        return em.createQuery(criteria).getResultList();
+    }
+
+    public void save(InventoryItem item) {
+        em.persist(item);
     }
 }
